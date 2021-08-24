@@ -1,11 +1,16 @@
-import { from, of, throwError } from 'rxjs';
+import { empty, from, of, throwError } from 'rxjs';
 import { MedicosComponent } from './medicos.component';
 import { MedicosService } from './medicos.service';
 
 describe('MedicosComponent', () => {
 
     let componente: MedicosComponent;
-    const servicio = new MedicosService(null);
+    let servicio: any;
+
+    beforeEach(() => {
+        const spy = jasmine.createSpyObj('HttpClient', { post: of({}), get: of({}) })
+        servicio = new MedicosService(spy)
+    });
 
     beforeEach( () => {
         componente = new MedicosComponent(servicio);
@@ -13,11 +18,11 @@ describe('MedicosComponent', () => {
 
     it('Init: should get Medicos', () => {
         
-        const medicos = ['medico1','medico2','medico3'];
+        const medicos: string[] = ['medico1','medico2','medico3'];
 
-         spyOn(servicio, 'getMedicos').and.callFake( () => {
+        spyOn(servicio, 'getMedicos').and.callFake( () => {
              return from([medicos]);
-         });
+        });
 
         componente.ngOnInit();
 
@@ -25,48 +30,62 @@ describe('MedicosComponent', () => {
    
     });
 
-    // it('should call the server to add Medico', () => {
+    it('should call the server to add a new medico', () => {
+
+        const espia = spyOn(servicio, 'agregarMedico').and.callFake( (medico:any) => {
+            return empty();
+        });
+
+        componente.agregarMedico();
+
+        expect(espia).toHaveBeenCalled();
+    });
+
+    it('should add a new Medico to the array of Medicos', () => {
+        const medico = { id: 1, name: 'Juan'};
+
+        spyOn(servicio, 'agregarMedico')
+            .and.returnValue( from([medico]) );
+
+        componente.agregarMedico();
+
+        expect(componente.medicos.indexOf(medico)).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should property of mensajeError equals to the error if the addition fails', () => {
         
-    //     const spy = jasmine.createSpyObj('HttpClient', { post: of({}), get: of({}) });
-    //     const service = new MedicosService(spy);
+        const myError = 'Cannot add medico';
         
-    //     const espia = spyOn(service, 'agregarMedico').and.returnValue(of(''));
+        spyOn(servicio, 'agregarMedico').and
+            .returnValue( throwError(myError) );
 
-    //     expect(espia).toHaveBeenCalled();
+        componente.agregarMedico();
 
-    // });
+        expect(componente.mensajeError).toBe(myError);
 
-    // it('should add a new Medico to the array of Medicos', () => {
-    //     const medico = { id: 1, name: 'Juan'};
+    });
 
-    //     spyOn(service, 'agregarMedico').and.returnValue( of([medico]) )
+    it('should call server to delete a medico', () => {
+        spyOn(window, 'confirm')
+            .and.returnValue(true);
 
-    //     //expect(component.medicos.length).toBe(1);
-    //     expect(component.medicos.indexOf(medico)).toBeGreaterThanOrEqual(0);
-    // });
+        const espia = spyOn(servicio, 'borrarMedico')
+            .and.returnValue(empty());
 
-    // it('should property of mensajeError equals to the error if the addition fails', () => {
-        
-    //     const myError = 'Cannot add medico';
-        
-    //     spyOn(service, 'agregarMedico').and
-    //         .returnValue( throwError(myError) );
+        componente.borrarMedico('1');
 
-    //     component.agregarMedico();
+        expect(espia).toHaveBeenCalledWith('1');
+    });
 
-    //     expect(component.mensajeError).toBe(myError);
+    it('should not call server to delete a medico when select No', () => {
+        spyOn(window, 'confirm')
+            .and.returnValue(false);
 
-    // });
+        const espia = spyOn(servicio, 'borrarMedico')
+            .and.returnValue(empty());
 
-    // it('should call server to delete a medico', () => {
-    //     spyOn(window, 'confirm')
-    //         .and.returnValue(true);
+        componente.borrarMedico('1');
 
-    //     const espia = spyOn(service, 'borrarMedico')
-    //         .and.returnValue(of(''));
-
-    //     component.borrarMedico('1');
-
-    //     expect(espia).toHaveBeenCalledWith('1');
-    // });
+        expect(espia).not.toHaveBeenCalledWith('1');
+    });
 });

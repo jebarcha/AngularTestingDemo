@@ -5,7 +5,7 @@ import { map } from 'rxjs/operators';
 @Injectable()
 export class MedicosService {
 
-  constructor( public http: HttpClient ) { }
+  constructor( public http: HttpClient) { }
 
   getMedicos() {
     return this.http.get('...').pipe(
